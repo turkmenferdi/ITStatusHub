@@ -7,7 +7,7 @@ type StatusSummaryItem = {
   incident?: (Incident & { incidentType: IncidentType }) | null;
 };
 
-type DependencyWithApps = ApplicationDependency & {
+export type DependencyWithApps = ApplicationDependency & {
   upstreamApplication: Application;
   downstreamApplication: Application;
 };

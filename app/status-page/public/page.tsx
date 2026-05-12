@@ -1,10 +1,10 @@
 ﻿import type { Metadata } from "next";
 import { statusSummary } from "@/lib/incidents";
-import { buildServiceImpacts } from "@/lib/service-impact";
+import { buildServiceImpacts, type DependencyWithApps } from "@/lib/service-impact";
 import { buildUptimeMap } from "@/lib/uptime";
 import { overallColor, colorLabelMap } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
-import type { StatusColor } from "@prisma/client";
+import type { Application, Incident, IncidentType, StatusColor } from "@prisma/client";
 import { Icon } from "@/components/Icon";
 import { SubscribeForm as SubscribeFormInline } from "@/components/SubscribeForm";
 
@@ -17,8 +17,8 @@ export const metadata: Metadata = {
 
 type PublicStatusData = {
   summary: Awaited<ReturnType<typeof statusSummary>>;
-  dependencies: Awaited<ReturnType<typeof prisma.applicationDependency.findMany>>;
-  openIncidents: Awaited<ReturnType<typeof prisma.incident.findMany>>;
+  dependencies: DependencyWithApps[];
+  openIncidents: Array<Incident & { application: Application; incidentType: IncidentType }>;
   uptimeMap: Awaited<ReturnType<typeof buildUptimeMap>>;
   error?: string | null;
 };
