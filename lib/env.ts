@@ -5,8 +5,10 @@ const envBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+const placeholderDatabaseUrl = "postgresql://placeholder:placeholder@localhost:5432/statushub?schema=public";
+
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string().min(1).default(placeholderDatabaseUrl),
   APP_URL: z.string().url().default("http://localhost:3000"),
   SMTP_HOST: z.string().optional().default(""),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
