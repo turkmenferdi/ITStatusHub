@@ -15,6 +15,14 @@ export const metadata: Metadata = {
   description: "Live availability status for all business services."
 };
 
+type PublicStatusData = {
+  summary: Awaited<ReturnType<typeof statusSummary>>;
+  dependencies: Awaited<ReturnType<typeof prisma.applicationDependency.findMany>>;
+  openIncidents: Awaited<ReturnType<typeof prisma.incident.findMany>>;
+  uptimeMap: Awaited<ReturnType<typeof buildUptimeMap>>;
+  error?: string | null;
+};
+
 const colorCss: Record<StatusColor, { dot: string; bar: string; badge: string; headerBg: string; sub: string }> = {
   green:  { dot: "bg-emerald-500", bar: "bg-emerald-400", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", headerBg: "bg-emerald-600", sub: "No known issues" },
   yellow: { dot: "bg-amber-500",   bar: "bg-amber-400",   badge: "bg-amber-50 text-amber-800 border-amber-200",       headerBg: "bg-amber-500",  sub: "Partial service impairment" },
@@ -39,21 +47,38 @@ function UptimeBars({ bars, compact = false }: { bars: Array<{ color: StatusColo
   );
 }
 
+async function loadPublicStatusData(): Promise<PublicStatusData> {
+  try {
+    const [summary, dependencies, openIncidents, uptimeMap] = await Promise.all([
+      statusSummary(),
+      prisma.applicationDependency.findMany({
+        where: { isActive: true },
+        include: { upstreamApplication: true, downstreamApplication: true },
+        orderBy: { createdAt: "asc" }
+      }),
+      prisma.incident.findMany({
+        where: { isOpen: true },
+        include: { application: true, incidentType: true },
+        orderBy: { startedAt: "desc" }
+      }),
+      buildUptimeMap(90)
+    ]);
+
+    return { summary, dependencies, openIncidents, uptimeMap, error: null };
+  } catch (error) {
+    console.error("[PUBLIC STATUS PAGE]", error);
+    return {
+      summary: [],
+      dependencies: [],
+      openIncidents: [],
+      uptimeMap: new Map(),
+      error: error instanceof Error ? error.message : "Status data could not be loaded."
+    };
+  }
+}
+
 export default async function PublicStatusPage() {
-  const [summary, dependencies, openIncidents, uptimeMap] = await Promise.all([
-    statusSummary(),
-    prisma.applicationDependency.findMany({
-      where: { isActive: true },
-      include: { upstreamApplication: true, downstreamApplication: true },
-      orderBy: { createdAt: "asc" }
-    }),
-    prisma.incident.findMany({
-      where: { isOpen: true },
-      include: { application: true, incidentType: true },
-      orderBy: { startedAt: "desc" }
-    }),
-    buildUptimeMap(90)
-  ]);
+  const { summary, dependencies, openIncidents, uptimeMap, error } = await loadPublicStatusData();
 
   const activeIssues = summary.filter((s) => s.color !== "green");
   const serviceImpacts = buildServiceImpacts(summary, dependencies);
@@ -107,6 +132,24 @@ export default async function PublicStatusPage() {
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-950/30 p-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-300">Status setup needs attention</p>
+            <p className="mt-2 text-sm leading-6 text-amber-100">
+              Public status data could not be loaded yet. This usually means the production database, migrations, or seed data are not ready.
+            </p>
+          </div>
+        )}
+
+        {!summary.length && !error && (
+          <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+            <p className="text-sm font-extrabold text-white">No services published yet</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Add and seed services in StatusHub to populate the public status experience.
+            </p>
+          </div>
+        )}
 
         {/* Active incident notices */}
         {openIncidents.length > 0 && (
