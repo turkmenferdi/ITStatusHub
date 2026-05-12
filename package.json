@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "prisma generate && next build",
+    "vercel-build": "prisma generate && next build",
     "start": "next start -p 3000",
+    "postinstall": "prisma generate",
     "lint": "eslint .",
     "clean:next": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path .next) { Remove-Item .next -Recurse -Force }\"",
     "test:business": "tsx scripts/business-cases.ts",
     "db:up": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:Path='C:\\Program Files\\Docker\\Docker\\resources\\bin;' + $env:Path; docker compose up -d\"",
     "db:down": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:Path='C:\\Program Files\\Docker\\Docker\\resources\\bin;' + $env:Path; docker compose down\"",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"
   },

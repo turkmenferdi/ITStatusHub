@@ -1,6 +1,6 @@
-# Incident Communication Hub
+# StatusHub
 
-Production-style local MVP for receiving approved Xurrent Major Incident webhooks, mapping them to internal applications, sending operator-controlled incident communications, and updating an internal status page.
+Incident communication control plane for receiving approved Xurrent Major Incident webhooks, mapping them to internal applications, sending operator-controlled incident communications, and updating an internal or public status page.
 
 ## Stack
 
@@ -79,6 +79,50 @@ Password: admin
 ```
 
 Change these values in `.env` before using the app beyond local development.
+
+## Deploying To Another Machine
+
+If you only want to run the app on another server or laptop:
+
+1. Clone the repository.
+2. Create a PostgreSQL database.
+3. Copy `.env.example` to `.env` and fill in production values.
+4. Install dependencies:
+
+```bash
+npm install
+```
+
+5. Run migrations:
+
+```bash
+npm run db:deploy
+```
+
+6. Seed baseline data:
+
+```bash
+npm run db:seed
+```
+
+7. Build and start:
+
+```bash
+npm run build
+npm run start
+```
+
+For internet-facing use with 4me/Xurrent webhooks, the app must be reachable on a public HTTPS URL.
+
+## Vercel Deployment
+
+For the fastest hosted setup, deploy the Next.js app to Vercel and connect it to a hosted PostgreSQL database.
+
+See:
+
+```text
+docs/deploy-vercel.md
+```
 
 ## Verification
 
