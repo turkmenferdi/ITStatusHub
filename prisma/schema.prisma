@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StatusColor {
+  green
+  yellow
+  red
+  blue
+}
+
+enum IncidentStage {
+  started
+  update
+  resolved
+  maintenance
+}
+
+enum GroupType {
+  technical
+  business
+  executive
+  maintenance
+}
+
+enum DeliveryMode {
+  dev
+  smtp
+}
+
+enum DeliveryStatus {
+  simulated
+  sent
+  failed
+}
+
+enum ActorType {
+  system
+  user
+  webhook
+}
+
+enum UserRole {
+  admin
+  operator
+  viewer
+}
+
+enum IntakeStatus {
+  pending
+  approved
+  ignored
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         UserRole  @default(operator)
+  passwordHash String
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+
+  @@index([role, isActive])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  userAgent  String?
+  ipAddress  String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Application {
+  id              String                 @id @default(cuid())
+  name            String
+  code            String                 @unique
+  ownerTeam       String
+  statusPageLabel String
+  statusPageOrder Int                    @default(0)
+  defaultStatus   StatusColor            @default(green)
+  isActive        Boolean                @default(true)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  rules           ApplicationGroupRule[]
+  templates       MessageTemplate[]
+  incidents       Incident[]
+  externalServiceMappings ExternalServiceMapping[]
+  externalServiceCatalogItems ExternalServiceCatalogItem[]
+  pendingIntakes          PendingIncidentIntake[]
+  upstreamDependencies   ApplicationDependency[] @relation("DependencyUpstream")
+  downstreamDependencies ApplicationDependency[] @relation("DependencyDownstream")
+
+  @@index([isActive])
+}
+
+model ExternalServiceMapping {
+  id                  String      @id @default(cuid())
+  source              String
+  externalServiceId   String?
+  externalServiceName String
+  applicationId       String
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  application         Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([source, externalServiceName])
+  @@index([source, externalServiceId])
+  @@index([applicationId])
+}
+
+model ExternalServiceCatalogItem {
+  id                     String       @id @default(cuid())
+  source                 String
+  externalServiceId      String
+  externalServiceName    String
+  sourceServiceName      String?
+  environment            String?
+  suggestedApplicationId String?
+  rawJson                Json
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  lastSyncedAt           DateTime     @default(now())
+  suggestedApplication   Application? @relation(fields: [suggestedApplicationId], references: [id])
+
+  @@unique([source, externalServiceId])
+  @@index([source, externalServiceName])
+  @@index([suggestedApplicationId])
+}
+
+model ApplicationDependency {
+  id                      String      @id @default(cuid())
+  upstreamApplicationId   String
+  downstreamApplicationId String
+  moduleName              String
+  integrationName         String
+  impactDescription       String
+  impactLevel             StatusColor @default(yellow)
+  isActive                Boolean     @default(true)
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  upstreamApplication     Application @relation("DependencyUpstream", fields: [upstreamApplicationId], references: [id], onDelete: Cascade)
+  downstreamApplication   Application @relation("DependencyDownstream", fields: [downstreamApplicationId], references: [id], onDelete: Cascade)
+
+  @@unique([upstreamApplicationId, downstreamApplicationId, moduleName, integrationName])
+  @@index([upstreamApplicationId, isActive])
+  @@index([downstreamApplicationId, isActive])
+}
+
+model NotificationGroup {
+  id                String                    @id @default(cuid())
+  name              String                    @unique
+  description       String
+  groupType         GroupType
+  isActive          Boolean                   @default(true)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  members           NotificationGroupMember[]
+  technicalRules    ApplicationGroupRule[]    @relation("TechnicalGroup")
+  businessRules     ApplicationGroupRule[]    @relation("BusinessGroup")
+  executiveRules    ApplicationGroupRule[]    @relation("ExecutiveGroup")
+  maintenanceRules  ApplicationGroupRule[]    @relation("MaintenanceGroup")
+  notifications     IncidentNotification[]
+
+  @@index([groupType, isActive])
+}
+
+model NotificationGroupMember {
+  id                  String            @id @default(cuid())
+  notificationGroupId String
+  email               String
+  displayName         String
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  notificationGroup   NotificationGroup @relation(fields: [notificationGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationGroupId, email])
+  @@index([email])
+}
+
+model IncidentType {
+  id               String                 @id @default(cuid())
+  name             String                 @unique
+  severityLevel    Int
+  defaultColor     StatusColor
+  notifyTechnical  Boolean                @default(true)
+  notifyBusiness   Boolean                @default(true)
+  notifyExecutive  Boolean                @default(false)
+  isMaintenance    Boolean                @default(false)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  rules            ApplicationGroupRule[]
+  templates        MessageTemplate[]
+  incidents        Incident[]
+  pendingIntakes   PendingIncidentIntake[]
+
+  @@index([severityLevel])
+}
+
+model ApplicationGroupRule {
+  id                 String             @id @default(cuid())
+  applicationId      String
+  incidentTypeId     String
+  technicalGroupId   String?
+  businessGroupId    String?
+  executiveGroupId   String?
+  maintenanceGroupId String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  application        Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  incidentType       IncidentType       @relation(fields: [incidentTypeId], references: [id], onDelete: Cascade)
+  technicalGroup     NotificationGroup? @relation("TechnicalGroup", fields: [technicalGroupId], references: [id])
+  businessGroup      NotificationGroup? @relation("BusinessGroup", fields: [businessGroupId], references: [id])
+  executiveGroup     NotificationGroup? @relation("ExecutiveGroup", fields: [executiveGroupId], references: [id])
+  maintenanceGroup   NotificationGroup? @relation("MaintenanceGroup", fields: [maintenanceGroupId], references: [id])
+
+  @@unique([applicationId, incidentTypeId])
+}
+
+model MessageTemplate {
+  id              String         @id @default(cuid())
+  applicationId   String?
+  incidentTypeId  String?
+  stage           IncidentStage
+  subjectTemplate String
+  bodyHtmlTemplate String
+  bodyTextTemplate String
+  isDefault       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  application     Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  incidentType    IncidentType?  @relation(fields: [incidentTypeId], references: [id], onDelete: Cascade)
+
+  @@index([stage, isDefault])
+  @@index([applicationId, incidentTypeId])
+}
+
+model Incident {
+  id                         String                 @id @default(cuid())
+  xurrentRequestId           String
+  xurrentMajorIncidentStatus String
+  applicationId              String
+  incidentTypeId             String
+  currentStage               IncidentStage
+  currentColor               StatusColor
+  title                      String
+  summary                    String
+  workingTeams               String
+  nextUpdateAt               DateTime?
+  statusPagePublicId         String?
+  isOpen                     Boolean                @default(true)
+  startedAt                  DateTime               @default(now())
+  resolvedAt                 DateTime?
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+  application                Application            @relation(fields: [applicationId], references: [id])
+  incidentType               IncidentType           @relation(fields: [incidentTypeId], references: [id])
+  notifications              IncidentNotification[]
+  postMortem                 PostMortem?
+
+  @@index([isOpen, currentColor])
+  @@index([applicationId, isOpen])
+  @@unique([xurrentRequestId, isOpen])
+}
+
+model PendingIncidentIntake {
+  id                         String        @id @default(cuid())
+  source                     String
+  externalRequestId          String
+  externalEventId            String?
+  externalServiceId          String?
+  externalServiceName        String
+  suggestedApplicationId     String?
+  incidentTypeId             String
+  status                     IntakeStatus  @default(pending)
+  title                      String
+  summary                    String
+  priority                   String?
+  majorIncidentStatus        String?
+  workingTeams               String?
+  nextUpdateAt               DateTime?
+  payloadJson                Json
+  approvedIncidentId         String?
+  approvedAt                 DateTime?
+  ignoredAt                  DateTime?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+  suggestedApplication       Application?  @relation(fields: [suggestedApplicationId], references: [id])
+  incidentType               IncidentType  @relation(fields: [incidentTypeId], references: [id])
+
+  @@unique([source, externalRequestId, status])
+  @@index([status, createdAt])
+  @@index([suggestedApplicationId])
+}
+
+model PostMortem {
+  id                  String    @id @default(cuid())
+  incidentId          String    @unique
+  severity            String?
+  impact              String?
+  timeline            String?
+  rootCause           String?
+  contributingFactors String?
+  lessonsLearned      String?
+  actionItems         String?
+  authorName          String?
+  publishedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  incident            Incident  @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model StatusPageSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  isActive       Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+
+  @@index([isActive])
+}
+
+model IncidentNotification {
+  id                String            @id @default(cuid())
+  incidentId        String
+  stage             IncidentStage
+  recipientGroupId  String
+  deliveryMode      DeliveryMode
+  subjectRendered   String
+  bodyRendered      String
+  deliveryStatus    DeliveryStatus
+  providerMessageId String?
+  sentAt            DateTime?
+  createdAt         DateTime          @default(now())
+  incident          Incident          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  recipientGroup    NotificationGroup @relation(fields: [recipientGroupId], references: [id])
+
+  @@index([incidentId, stage])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  actorType   ActorType
+  actorName   String
+  action      String
+  entityType  String
+  entityId    String
+  payloadJson Json
+  createdAt   DateTime  @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model WebhookEvent {
+  id              String    @id @default(cuid())
+  source          String
+  externalEventId String?
+  eventType       String
+  payloadJson     Json
+  signature       String?
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  processingError String?
+  createdAt       DateTime  @default(now())
+
+  @@unique([source, externalEventId])
+  @@index([processed, createdAt])
+}

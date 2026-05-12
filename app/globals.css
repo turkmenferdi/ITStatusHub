@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --status-green: #059669;
+  --status-yellow: #d97706;
+  --status-red: #dc2626;
+  --status-blue: #0284c7;
+}
+
+body {
+  min-height: 100dvh;
+  background: #eef1f5;
+  color: #0f172a;
+}
+
+/* Form elements */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  @apply rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15;
+}
+
+label {
+  @apply text-xs font-semibold uppercase tracking-wider text-slate-500;
+}
+
+input[type="checkbox"] {
+  @apply h-4 w-4 rounded border-slate-300 p-0 accent-cyan-700 shadow-none;
+}
+
+/* Collapsible details */
+details.status-dependencies > summary {
+  list-style: none;
+}
+details.status-dependencies > summary::-webkit-details-marker {
+  display: none;
+}
+details.status-dependencies > summary .collapse-icon::before {
+  content: "+";
+}
+details.status-dependencies[open] > summary .collapse-icon::before {
+  content: "−";
+}
+
+/* Active incident pulse */
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+.pulse-dot { animation: statusPulse 2s ease-in-out infinite; }
+
+/* Fade-in animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up { animation: fadeInUp 0.25s ease-out; }
+
+/* Shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Sidebar nav scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+/* Code blocks */
+pre code { font-size: 0.75rem; line-height: 1.6; }

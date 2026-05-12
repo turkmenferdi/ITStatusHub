@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Start-Process -FilePath 'node' -ArgumentList 'node_modules/next/dist/bin/next', 'dev', '-p', '3001', '--no-turbopack' -WorkingDirectory 'c:\\\\Users\\\\Administrator\\\\Desktop\\\\StatusHub - Copy' -WindowStyle Hidden\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/analytics)",
+      "Bash(curl -s http://localhost:3001/analytics)",
+      "Bash(cmd /c \"netstat -ano 2>&1 | findstr :3001\")",
+      "Bash(cmd /c \"tasklist | findstr node\")",
+      "Bash(powershell -Command \"Start-Process -FilePath 'node' -ArgumentList 'node_modules/next/dist/bin/next', 'dev', '-p', '3001', '--no-turbopack' -WorkingDirectory 'c:\\\\Users\\\\Administrator\\\\Desktop\\\\StatusHub - Copy' -WindowStyle Hidden -PassThru | Select-Object Id\")",
+      "Bash(cmd /c \"netstat -ano | findstr :3001\")",
+      "Bash(node node_modules/next/dist/bin/next dev -p 3001 --no-turbopack)",
+      "Bash(node -e \"const p=require\\('./node_modules/next/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node node_modules/next/dist/bin/next --help)",
+      "Bash(node node_modules/next/dist/bin/next dev --help)",
+      "Bash(powershell -Command \"Start-Process -FilePath 'node' -ArgumentList 'node_modules/next/dist/bin/next', 'dev', '--webpack', '-p', '3001' -WorkingDirectory 'c:\\\\Users\\\\Administrator\\\\Desktop\\\\StatusHub - Copy' -WindowStyle Hidden -PassThru | Select-Object Id\")",
+      "Bash(node node_modules/next/dist/bin/next dev --webpack -p 3001)",
+      "Bash(cmd /c \"netstat -ano\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Format-Table\")",
+      "Bash(powershell -Command \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 3001\\).OwningProcess -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, CPU\")",
+      "Bash(powershell -Command \"Stop-Process -Id 36824 -Force\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Stop-Process -Id 36824 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Select-Object LocalPort, State, OwningProcess\")"
+    ]
+  }
+}
