@@ -27,7 +27,10 @@ Create a PostgreSQL database on one of these providers:
 - `Railway`
 - `Vercel Postgres`
 
-Copy the full connection string and save it as `DATABASE_URL`.
+Use the Neon values like this:
+
+- `DATABASE_URL`: pooled URL
+- `DIRECT_URL`: unpooled URL
 
 ## Step 2: Import The Project Into Vercel
 
@@ -41,7 +44,8 @@ Copy the full connection string and save it as `DATABASE_URL`.
 Add these environment variables in Vercel:
 
 ```text
-DATABASE_URL=postgresql://...
+DATABASE_URL=postgresql://...pooled...
+DIRECT_URL=postgresql://...unpooled...
 APP_URL=https://your-vercel-domain.vercel.app
 
 SMTP_HOST=...
@@ -98,7 +102,7 @@ npm run db:seed
 
 Important:
 
-- run these commands from a machine that has the same `DATABASE_URL`
+- run these commands from a machine that has the same `DATABASE_URL` and `DIRECT_URL`
 - do not use `prisma migrate dev` in production
 
 ## Step 6: Update APP_URL
@@ -143,7 +147,8 @@ x-xurrent-webhook-secret: YOUR_XURRENT_WEBHOOK_SECRET
 
 - `DEV_EMAIL_MODE` must be `false`
 - `APP_URL` must be public HTTPS
-- `DATABASE_URL` must point to hosted Postgres
+- `DATABASE_URL` should use the pooled Neon connection
+- `DIRECT_URL` should use the unpooled Neon connection
 - use a strong `SESSION_SECRET`
 - change the default admin password
 - keep webhook secrets long and random
