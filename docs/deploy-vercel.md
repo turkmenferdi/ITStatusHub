@@ -74,7 +74,7 @@ ADMIN_PASSWORD=replace-with-a-strong-password
 The repository already includes scripts for Vercel:
 
 - `postinstall`: runs `prisma generate`
-- `vercel-build`: runs `prisma generate && next build`
+- `vercel-build`: runs `prisma generate && prisma migrate deploy && prisma db seed && next build`
 
 You can keep Vercel's default install command.
 
@@ -88,22 +88,12 @@ npm run vercel-build
 
 Deploy the project once from Vercel.
 
-After the first deploy finishes, run the database migration against your production database:
+StatusHub now runs these automatically during the Vercel build:
 
-```bash
-npm run db:deploy
-```
+- `prisma migrate deploy`
+- `prisma db seed`
 
-Then seed the baseline data:
-
-```bash
-npm run db:seed
-```
-
-Important:
-
-- run these commands from a machine that has the same `DATABASE_URL` and `DIRECT_URL`
-- do not use `prisma migrate dev` in production
+That means once `DATABASE_URL` and `DIRECT_URL` are configured correctly, a normal redeploy should prepare the production database without extra terminal work.
 
 ## Step 6: Update APP_URL
 
